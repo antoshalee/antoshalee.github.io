@@ -3,10 +3,8 @@
 // import {OscillatorSelector} from './oscillator_selector.jsx';
 // import {FilterSelector} from './filter_selector.jsx';
 
-const OSCILLATORS_NUMBER = 2;
-
 const DEFAULT_STATE = {
-  oscillators: new Array(OSCILLATORS_NUMBER).fill(null).map(()=>(
+  oscillators: new Array(SynthEngine.oscillatorsNumber).fill(null).map(()=>(
     {
       // Try keep state structure as plain as possible
       // for more simple immutable state updates
@@ -24,77 +22,21 @@ class Synth extends React.Component {
     super(props);
 
     this.interval = null;
-    this.audioContext = props.audioContext;
-    this.connectNode = props.connectNode;
     this.state = DEFAULT_STATE;
-    this.audioNodes = null;
+
+    this.synthEngine = props.synthEngine;
   }
 
   componentDidMount() {
-    this.buildAudioNodes();
-    this.applyStateToAudioNodes();
+    this.synthEngine.applyState(this.state);
   }
 
   componentDidUpdate() {
-    this.applyStateToAudioNodes();
-  }
-
-  buildAudioNodes = () => {
-    // We store audioNodes in the object
-    // which structure corresponds to the state structure
-    // to easy update its values
-    // oscillatorNodes not in this array since they
-    // will be created per each note play
-    this.audioNodes = {oscillators: []};
-
-    for (let i = 0; i < this.state.oscillators.length; i++) {
-      const gainNode = this.audioContext.createGain();
-      gainNode.connect(this.connectNode);
-
-      const filterNode = this.audioContext.createBiquadFilter();
-
-      this.audioNodes.oscillators.push({
-        input: null,
-        filterNode: filterNode,
-        gainNode: gainNode,
-      });
-    }
-  }
-
-  applyStateToAudioNodes = () => {
-    this.state.oscillators.forEach((osc, idx) => {
-      let filterNode, gainNode;
-      let oscillator = this.audioNodes.oscillators[idx];
-      ({filterNode, gainNode} = oscillator);
-
-      gainNode.gain.value = osc.gain;
-
-      if (osc.filterType == "" || !osc.filterType) {
-        oscillator.input = gainNode;
-        filterNode.disconnect();
-      } else {
-        filterNode.type = osc.filterType;
-        filterNode.frequency.value = osc.filterFrequency;
-        filterNode.Q.value = osc.filterQ;
-
-        filterNode.connect(gainNode);
-        oscillator.input = filterNode;
-      }
-    })
+    this.synthEngine.applyState(this.state);
   }
 
   playNote = () => {
-    this.state.oscillators.forEach((osc, idx) => {
-      let input = this.audioNodes.oscillators[idx].input;
-
-      let oscNode = this.audioContext.createOscillator();
-      oscNode.type = osc.type;
-
-      oscNode.frequency.setValueAtTime(440, this.audioContext.currentTime);
-      oscNode.connect(input);
-      oscNode.start();
-      oscNode.stop(this.audioContext.currentTime + 0.5);
-    });
+    this.synthEngine.playNote();
   }
 
   handlePlay = (e) => {
@@ -132,13 +74,13 @@ class Synth extends React.Component {
             <input
               type="number"
               value={osc.filterFrequency}
-              onChange={(e) => this.handleOscChange(idx, "filterFrequency", toNumber(e.target.value))}
+              onChange={(e) => this.handleOscChange(idx, "filterFrequency", _.toNumber(e.target.value))}
             />
 
             <input
               type="number"
               value={osc.filterQ}
-              onChange={(e) => this.handleOscChange(idx, "filterQ", toNumber(e.target.value))}
+              onChange={(e) => this.handleOscChange(idx, "filterQ", _.toNumber(e.target.value))}
             />
 
             <input

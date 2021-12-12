@@ -14,5 +14,8 @@ const gainNode = audioContext.createGain();
 gainNode.gain.value = 0.1;
 gainNode.connect(audioContext.destination);
 
-const synthContrainer = document.querySelector('#synth_container');
-ReactDOM.render(e(Synth, {audioContext: audioContext, connectNode: gainNode}), synthContrainer);
+const synthContainer = document.querySelector('#synth_container');
+
+const synthEngine = new SynthEngine(audioContext, gainNode);
+
+ReactDOM.render(e(Synth, {synthEngine: synthEngine}), synthContainer);
